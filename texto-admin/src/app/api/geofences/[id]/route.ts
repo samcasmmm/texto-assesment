@@ -5,17 +5,15 @@ import { getCurrentUser, isAdmin } from '@/lib/auth';
 
 export async function DELETE(
   req: Request,
-  { params }: { params: Promise<{ id: string }> }, // ✅ params is Promise
+  { params }: { params: Promise<{ id: string }> },
 ) {
   await dbConnect();
-
   const user = await getCurrentUser(req);
+  const { id } = await params;
 
   if (!user || !isAdmin(user)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
-
-  const { id } = await params;
 
   try {
     await GeoFence.findByIdAndDelete(id);
@@ -34,10 +32,11 @@ export async function DELETE(
 
 export async function PUT(
   req: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   await dbConnect();
   const user = await getCurrentUser(req);
+  const { id } = await params;
 
   if (!user || !isAdmin(user)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
@@ -45,7 +44,7 @@ export async function PUT(
 
   try {
     const data = await req.json();
-    const geofence = await GeoFence.findByIdAndUpdate(params.id, data, {
+    const geofence = await GeoFence.findByIdAndUpdate(id, data, {
       new: true,
     });
     return NextResponse.json(geofence);

@@ -5,9 +5,10 @@ import { getCurrentUser, isAdmin } from '@/lib/auth';
 
 export async function GET(
   req: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   await dbConnect();
+  const { id } = await params;
   const user = await getCurrentUser(req);
 
   if (!user) {
@@ -15,12 +16,12 @@ export async function GET(
   }
 
   // User can only see themselves, Admin can see anyone
-  if (!isAdmin(user) && user.userId !== params.id) {
+  if (!isAdmin(user) && user.userId !== id) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
   try {
-    const employee = await Employee.findById(params.id);
+    const employee = await Employee.findById(id);
     return NextResponse.json(employee);
   } catch (error) {
     return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
@@ -29,9 +30,10 @@ export async function GET(
 
 export async function PUT(
   req: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   await dbConnect();
+  const { id } = await params;
   const user = await getCurrentUser(req);
 
   if (!user) {
@@ -39,7 +41,7 @@ export async function PUT(
   }
 
   // User can only update themselves, Admin can update anyone
-  if (!isAdmin(user) && user.userId !== params.id) {
+  if (!isAdmin(user) && user.userId !== id) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
@@ -51,9 +53,7 @@ export async function PUT(
       delete data.role;
     }
 
-    const employee = await Employee.findByIdAndUpdate(params.id, data, {
-      new: true,
-    });
+    const employee = await Employee.findByIdAndUpdate(id, data, { new: true });
     return NextResponse.json(employee);
   } catch (error) {
     return NextResponse.json(
@@ -65,9 +65,10 @@ export async function PUT(
 
 export async function DELETE(
   req: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   await dbConnect();
+  const { id } = await params;
   const user = await getCurrentUser(req);
 
   if (!user || !isAdmin(user)) {
@@ -75,7 +76,7 @@ export async function DELETE(
   }
 
   try {
-    await Employee.findByIdAndDelete(params.id);
+    await Employee.findByIdAndDelete(id);
     return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json(

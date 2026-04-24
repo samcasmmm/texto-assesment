@@ -3,7 +3,7 @@ import dbConnect from '@/lib/db';
 import Employee from '@/models/Employee';
 import { getCurrentUser, isAdmin } from '@/lib/auth';
 
-export async function GET() {
+export async function GET(req: Request) {
   await dbConnect();
   const user = await getCurrentUser(req);
 

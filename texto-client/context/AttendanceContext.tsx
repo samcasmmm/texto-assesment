@@ -107,10 +107,12 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({
   const checkIn = async () => {
     setIsActionLoading(true);
     try {
+      console.log('[Check-in] Starting...');
       // Request notification permission (required on Android 13+)
       if (Platform.OS === 'android') {
         const { status: notifStatus } =
           await Notifications.requestPermissionsAsync();
+        console.log('[Check-in] Notification status:', notifStatus);
         if (notifStatus !== 'granted') {
           Alert.alert(
             'Notification Permission',
@@ -121,6 +123,7 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({
 
       const { status: fg } = await Location.requestForegroundPermissionsAsync();
       const { status: bg } = await Location.requestBackgroundPermissionsAsync();
+      console.log('[Check-in] Location permissions:', { fg, bg });
 
       if (fg !== 'granted' || bg !== 'granted') {
         Alert.alert('Permissions Required', 'Please enable location access.');
@@ -143,32 +146,42 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({
       }
 
       const loc = await Location.getCurrentPositionAsync({});
+      console.log('[Check-in] Current position:', loc.coords);
+      
       const res = await api.post('/attendance/check-in', {
         lat: loc.coords.latitude,
         lng: loc.coords.longitude,
       });
+      console.log('[Check-in] API Response:', res.data);
 
       if (res.data?.success) {
         // Mark as working in storage so the background task can read it
         storageService.set(WORKING_KEY, 'true');
         setUser((prev: any) => ({ ...prev, working: true }));
 
-        await Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
-          accuracy: Location.Accuracy.Balanced,
-          timeInterval: 3 * 60 * 1000,
-          distanceInterval: 0,
-          pausesUpdatesAutomatically: false,
-          foregroundService: {
-            notificationTitle: 'TextoHRMS — On Duty',
-            notificationBody: 'Location is being tracked every 3 minutes',
-            notificationChannelId: LOCATION_CHANNEL_ID,
-            killServiceOnDestroy: false,
-          },
-        });
+        try {
+          await Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
+            accuracy: Location.Accuracy.Balanced,
+            timeInterval: 3 * 60 * 1000,
+            distanceInterval: 0,
+            pausesUpdatesAutomatically: false,
+            foregroundService: {
+              notificationTitle: 'TextoHRMS — On Duty',
+              notificationBody: 'Location is being tracked every 3 minutes',
+              notificationChannelId: LOCATION_CHANNEL_ID,
+              killServiceOnDestroy: false,
+            },
+          });
+          console.log('[Check-in] Background task started');
+        } catch (taskErr) {
+          console.error('[Check-in] Background task failed to start:', taskErr);
+          // We still keep the user checked in as the DB record was created
+        }
 
         attendanceGroupBy();
       }
     } catch (e: any) {
+      console.error('[Check-in] Error:', e);
       Alert.alert('Check-in Failed', e.message);
     } finally {
       setIsActionLoading(false);
@@ -178,18 +191,23 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({
   const checkOut = async () => {
     setIsActionLoading(true);
     try {
+      console.log('[Check-out] Starting...');
       const res = await api.post('/attendance/check-out');
+      console.log('[Check-out] API Response:', res.data);
+      
       if (res.data) {
         storageService.set(WORKING_KEY, 'false');
         setUser((prev: any) => ({ ...prev, working: false }));
 
         try {
           await Location.stopLocationUpdatesAsync(LOCATION_TASK_NAME);
+          console.log('[Check-out] Background task stopped');
         } catch (_) {}
 
         attendanceGroupBy();
       }
     } catch (e: any) {
+      console.error('[Check-out] Error:', e);
       Alert.alert('Check-out Failed', e.message);
     } finally {
       setIsActionLoading(false);

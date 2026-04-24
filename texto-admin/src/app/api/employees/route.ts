@@ -5,7 +5,7 @@ import { getCurrentUser, isAdmin } from '@/lib/auth';
 
 export async function GET() {
   await dbConnect();
-  const user = await getCurrentUser();
+  const user = await getCurrentUser(req);
 
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -20,13 +20,16 @@ export async function GET() {
     }
     return NextResponse.json(employees);
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to fetch employees' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to fetch employees' },
+      { status: 500 },
+    );
   }
 }
 
 export async function POST(req: Request) {
   await dbConnect();
-  const user = await getCurrentUser();
+  const user = await getCurrentUser(req);
 
   if (!user || !isAdmin(user)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
@@ -37,6 +40,9 @@ export async function POST(req: Request) {
     const employee = await Employee.create(data);
     return NextResponse.json(employee, { status: 201 });
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to create employee' }, { status: 400 });
+    return NextResponse.json(
+      { error: 'Failed to create employee' },
+      { status: 400 },
+    );
   }
 }

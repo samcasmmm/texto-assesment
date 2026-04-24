@@ -100,6 +100,7 @@ function generateEmployees() {
     email: `${f.toLowerCase()}.${lastNames[i % lastNames.length].toLowerCase()}@texto.in`,
     role: roles[i % roles.length],
     password: 'passwd',
+    working: false,
   }));
 }
 
@@ -119,6 +120,7 @@ async function seed() {
       email: 'admin@texto.in',
       role: 'Admin',
       password: 'passwd',
+      working: false,
     });
 
     // 👥 Employees
@@ -142,6 +144,12 @@ async function seed() {
         name: 'Kalyan Office',
         latitude: 19.2358765,
         longitude: 73.1290325,
+        radius: 250,
+      },
+      {
+        name: 'My Home Office',
+        latitude: 19.269125,
+        longitude: 73.172335,
         radius: 250,
       },
     ]);

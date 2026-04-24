@@ -9,11 +9,11 @@ import {
   StatusBar,
   FlatList,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import {
   LogOut,
   MapPin,
-  Clock,
   User as UserIcon,
   Activity,
 } from 'lucide-react-native';
@@ -22,8 +22,9 @@ import { useAttendance } from '@/context/AttendanceContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function HomeScreen() {
-  const { user, logout } = useAuth();
-  const { isCheckedIn, checkIn, checkOut, attendanceGroup } = useAttendance();
+  const { user, logout, refreshUser } = useAuth();
+  const { isCheckedIn, checkIn, checkOut, attendanceGroup, isActionLoading } =
+    useAttendance();
 
   const today = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
@@ -32,7 +33,9 @@ export default function HomeScreen() {
   });
 
   const formatDate = (dateStr: string) => {
+    if (!dateStr) return '-- -- --';
     const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return 'Invalid Date';
     return date.toLocaleDateString('en-IN', {
       day: '2-digit',
       month: 'short',
@@ -41,7 +44,9 @@ export default function HomeScreen() {
   };
 
   const formatTime = (dateStr: string) => {
+    if (!dateStr) return null;
     const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return null;
     return date.toLocaleTimeString('en-IN', {
       hour: '2-digit',
       minute: '2-digit',
@@ -90,30 +95,33 @@ export default function HomeScreen() {
         </View>
 
         <View style={styles.mainActionCard}>
-          <View style={styles.timeSection}>
-            <Clock size={20} color='#94a3b8' />
-            <Text style={styles.timeLabel}>Shift Duration</Text>
-            <Text style={styles.timeValue}>
-              {isCheckedIn ? '04h 12m' : '--:--'}
-            </Text>
-          </View>
-
           <TouchableOpacity
-            onPress={isCheckedIn ? checkOut : checkIn}
+            onPress={
+              isCheckedIn
+                ? () => checkOut(refreshUser)
+                : () => checkIn(refreshUser)
+            }
             activeOpacity={0.9}
+            disabled={isActionLoading}
             style={[
               styles.attendanceBtn,
               isCheckedIn ? styles.btnCheckOut : styles.btnCheckIn,
+              isActionLoading && { opacity: 0.8 },
             ]}
           >
-            <Text style={styles.attendanceBtnText}>
-              {isCheckedIn ? 'End Day' : 'Punch In'}
-            </Text>
-            <Activity size={20} color='#fff' />
+            {isActionLoading ? (
+              <ActivityIndicator color='#fff' />
+            ) : (
+              <>
+                <Text style={styles.attendanceBtnText}>
+                  {isCheckedIn ? 'End Day' : 'Punch In'}
+                </Text>
+                <Activity size={20} color='#fff' />
+              </>
+            )}
           </TouchableOpacity>
         </View>
 
-        {/* --- Redesigned FlatList Section --- */}
         <Text style={styles.sectionTitle}>Logs</Text>
 
         <FlatList
@@ -249,11 +257,6 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   mainActionCard: {
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-    borderRadius: 4,
-    padding: 24,
     alignItems: 'center',
     marginBottom: 24,
   },
@@ -373,8 +376,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     height: 56,
+    borderColor: '#ef4444',
     borderWidth: 1,
-    borderColor: '#fee2e2',
     borderRadius: 4,
   },
   logoutText: {

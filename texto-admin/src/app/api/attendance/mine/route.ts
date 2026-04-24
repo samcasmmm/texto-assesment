@@ -6,7 +6,7 @@ import { getCurrentUser, isAdmin } from '@/lib/auth';
 export async function GET(req: Request) {
   await dbConnect();
 
-  const user = await getCurrentUser();
+  const user = await getCurrentUser(req);
 
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

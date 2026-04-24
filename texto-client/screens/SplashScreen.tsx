@@ -1,12 +1,27 @@
+import TextoHrmsLogo from '@/components/texto-hrms-logo';
 import React from 'react';
-import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
+import {
+  View,
+  Text,
+  ActivityIndicator,
+  StyleSheet,
+  StatusBar,
+} from 'react-native';
 
 export const SplashScreen = () => {
   return (
     <View style={styles.container}>
-      <Text style={styles.logo}>TextoHRMS</Text>
-      <ActivityIndicator size="large" color="#3498db" />
-      <Text style={styles.loading}>Checking session...</Text>
+      <StatusBar barStyle='dark-content' />
+
+      <View style={styles.brandWrapper}>
+        <TextoHrmsLogo />
+        <View style={styles.separator} />
+      </View>
+
+      <View style={styles.footer}>
+        <ActivityIndicator size='small' color='#0f172a' />
+        <Text style={styles.loading}>INITIALIZING SECURE SESSION...</Text>
+      </View>
     </View>
   );
 };
@@ -18,14 +33,40 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#fff',
   },
+  brandWrapper: {
+    alignItems: 'center',
+  },
   logo: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#3498db',
-    marginBottom: 20,
+    fontSize: 36,
+    fontWeight: '800',
+    color: '#0f172a',
+    letterSpacing: -1.5,
+  },
+  brandAccent: {
+    color: '#2563eb', // Minimal blue usage
+  },
+  separator: {
+    width: 40,
+    height: 3,
+    backgroundColor: '#0f172a',
+    marginVertical: 12,
+  },
+  version: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#94a3b8',
+    letterSpacing: 2,
+  },
+  footer: {
+    position: 'absolute',
+    bottom: 60,
+    alignItems: 'center',
+    gap: 12,
   },
   loading: {
-    marginTop: 10,
-    color: '#95a5a6',
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#64748b',
+    letterSpacing: 1,
   },
 });

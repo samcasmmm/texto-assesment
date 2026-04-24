@@ -5,10 +5,10 @@ import { getCurrentUser, isAdmin } from '@/lib/auth';
 
 export async function GET(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   await dbConnect();
-  const user = await getCurrentUser();
+  const user = await getCurrentUser(req);
 
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -29,10 +29,10 @@ export async function GET(
 
 export async function PUT(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   await dbConnect();
-  const user = await getCurrentUser();
+  const user = await getCurrentUser(req);
 
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -45,25 +45,30 @@ export async function PUT(
 
   try {
     const data = await req.json();
-    
+
     // Prevent non-admins from changing their own role
     if (!isAdmin(user)) {
       delete data.role;
     }
 
-    const employee = await Employee.findByIdAndUpdate(params.id, data, { new: true });
+    const employee = await Employee.findByIdAndUpdate(params.id, data, {
+      new: true,
+    });
     return NextResponse.json(employee);
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to update employee' }, { status: 400 });
+    return NextResponse.json(
+      { error: 'Failed to update employee' },
+      { status: 400 },
+    );
   }
 }
 
 export async function DELETE(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   await dbConnect();
-  const user = await getCurrentUser();
+  const user = await getCurrentUser(req);
 
   if (!user || !isAdmin(user)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
@@ -73,6 +78,9 @@ export async function DELETE(
     await Employee.findByIdAndDelete(params.id);
     return NextResponse.json({ success: true });
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to delete employee' }, { status: 400 });
+    return NextResponse.json(
+      { error: 'Failed to delete employee' },
+      { status: 400 },
+    );
   }
 }

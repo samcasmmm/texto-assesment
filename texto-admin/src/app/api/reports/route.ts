@@ -6,7 +6,7 @@ import { getCurrentUser, isAdmin } from '@/lib/auth';
 
 export async function GET(req: Request) {
   await dbConnect();
-  const user = await getCurrentUser();
+  const user = await getCurrentUser(req);
 
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -25,20 +25,23 @@ export async function GET(req: Request) {
       query.userId = user.userId;
     }
 
-    const attendanceRecords = await Attendance.find(query).populate('userId', 'name email role');
-    
+    const attendanceRecords = await Attendance.find(query).populate(
+      'userId',
+      'name email role',
+    );
+
     // Summary logic
     let summary;
     if (isAdmin(user)) {
       const totalEmployees = await Employee.countDocuments();
-      const checkedIn = attendanceRecords.filter(r => r.checkIn).length;
-      const late = attendanceRecords.filter(r => r.status === 'late').length;
-      
+      const checkedIn = attendanceRecords.filter((r) => r.checkIn).length;
+      const late = attendanceRecords.filter((r) => r.status === 'late').length;
+
       summary = {
         totalEmployees,
         checkedIn,
         late,
-        absent: totalEmployees - checkedIn
+        absent: totalEmployees - checkedIn,
       };
     } else {
       // User specific summary
@@ -46,16 +49,19 @@ export async function GET(req: Request) {
       summary = {
         status: record?.status || 'absent',
         checkIn: record?.checkIn || null,
-        checkOut: record?.checkOut || null
+        checkOut: record?.checkOut || null,
       };
     }
 
     return NextResponse.json({
       date,
       summary,
-      records: attendanceRecords
+      records: attendanceRecords,
     });
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to generate report' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to generate report' },
+      { status: 500 },
+    );
   }
 }

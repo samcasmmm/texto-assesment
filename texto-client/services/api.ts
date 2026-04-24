@@ -20,6 +20,8 @@ api.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
 
+    console.log(`[REQUEST] - ${config.url} - ${config.method?.toUpperCase()}`);
+
     return config;
   },
   (error: AxiosError) => Promise.reject(error),
@@ -27,10 +29,19 @@ api.interceptors.request.use(
 
 api.interceptors.response.use(
   (response: AxiosResponse) => {
+    console.log(
+      `[RESPONSE] - ${response.config.url} - ${JSON.stringify(response.data)}`,
+    );
+
     return response;
   },
   (error: AxiosError<any>) => {
-    console.log('error', error);
+    const status = error.response?.status || 'NETWORK_ERROR';
+    const url = error.config?.url || 'UNKNOWN_URL';
+
+    console.log(`[ERROR] - ${url} - ${status}`);
+    console.log('[MESSAGE]', error.response?.data || error.message);
+
     const message =
       error?.response?.data?.error ||
       error?.response?.data?.message ||

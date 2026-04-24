@@ -1,3 +1,5 @@
+'use client';
+
 import {
   DarkTheme,
   DefaultTheme,
@@ -24,9 +26,9 @@ function NavigationGuard() {
     const inAuthGroup = segments[0] === '(auth)';
 
     if (!token && !inAuthGroup) {
-      router.replace('/login');
+      router.replace('/(auth)/login');
     } else if (token && inAuthGroup) {
-      router.replace('/');
+      router.replace('/(app)');
     }
   }, [token, loading, segments]);
 
@@ -35,9 +37,9 @@ function NavigationGuard() {
   }
 
   return (
-    <Stack>
-      <Stack.Screen name='(auth)' options={{ headerShown: false }} />
-      <Stack.Screen name='(app)' options={{ headerShown: false }} />
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name='(auth)' options={{ animation: 'none' }} />
+      <Stack.Screen name='(app)' options={{ animation: 'none' }} />
       <Stack.Screen name='modal' options={{ presentation: 'modal' }} />
     </Stack>
   );

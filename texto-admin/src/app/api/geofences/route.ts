@@ -3,9 +3,9 @@ import dbConnect from '@/lib/db';
 import GeoFence from '@/models/GeoFence';
 import { getCurrentUser, isAdmin } from '@/lib/auth';
 
-export async function GET() {
+export async function GET(req: Request) {
   await dbConnect();
-  const user = await getCurrentUser();
+  const user = await getCurrentUser(req);
 
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -15,13 +15,16 @@ export async function GET() {
     const geofences = await GeoFence.find({});
     return NextResponse.json(geofences);
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to fetch geofences' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to fetch geofences' },
+      { status: 500 },
+    );
   }
 }
 
 export async function POST(req: Request) {
   await dbConnect();
-  const user = await getCurrentUser();
+  const user = await getCurrentUser(req);
 
   if (!user || !isAdmin(user)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
@@ -32,6 +35,9 @@ export async function POST(req: Request) {
     const geofence = await GeoFence.create(data);
     return NextResponse.json(geofence, { status: 201 });
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to create geofence' }, { status: 400 });
+    return NextResponse.json(
+      { error: 'Failed to create geofence' },
+      { status: 400 },
+    );
   }
 }

@@ -8,6 +8,8 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   loading: boolean;
+  setUser: React.Dispatch<React.SetStateAction<any>>;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -46,6 +48,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
+  const refreshUser = async () => {
+    try {
+      const data = await api.get('/auth/me');
+      if (data?.data?.success) {
+        setUser(data?.data?.user);
+      }
+    } catch (e) {
+      console.error('refreshUser failed', e);
+    }
+  };
+
   const login = async (email: string, password: string) => {
     const response = await api.post('/auth', {
       email,
@@ -66,7 +79,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, loading }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        token,
+        login,
+        logout,
+        loading,
+        setUser,
+        refreshUser,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

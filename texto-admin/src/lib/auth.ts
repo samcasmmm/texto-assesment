@@ -3,8 +3,10 @@ import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
-export async function getCurrentUser() {
-  const token = (await cookies()).get('token')?.value;
+export async function getCurrentUser(req: Request) {
+  const token =
+    (await cookies()).get('token')?.value ||
+    (await req.headers.get('Authorization'))?.split(' ')[1];
 
   if (!token) return null;
 

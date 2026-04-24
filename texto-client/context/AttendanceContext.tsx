@@ -3,15 +3,16 @@ import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
 import api from '@/services/api';
 import { Alert } from 'react-native';
+import { useAuth } from './AuthContext';
 
 const LOCATION_TASK_NAME = 'background-location-task';
 
 interface AttendanceContextType {
   isCheckedIn: boolean;
-  attendanceId: string | null;
-  checkIn: () => Promise<void>;
-  checkOut: () => Promise<void>;
+  checkIn: (fn: () => Promise<void>) => Promise<void>;
+  checkOut: (fn: () => Promise<void>) => Promise<void>;
   attendanceGroup: any[];
+  isActionLoading: boolean;
 }
 
 const AttendanceContext = createContext<AttendanceContextType | undefined>(
@@ -39,11 +40,35 @@ TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }: any) => {
 export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [isCheckedIn, setIsCheckedIn] = useState(false);
-  const [attendanceId, setAttendanceId] = useState<string | null>(null);
+  const { user, setUser } = useAuth();
   const [attendanceGroup, setAttendanceGroup] = useState<any>(null);
+  const [isActionLoading, setIsActionLoading] = useState(false);
 
-  const checkIn = async () => {
+  // isCheckedIn is derived purely from user.working
+  const isCheckedIn = Boolean(user?.working);
+
+  // Fetch logs whenever user logs in
+  useEffect(() => {
+    if (user?.email) {
+      attendanceGroupBy();
+    } else {
+      setAttendanceGroup(null);
+    }
+  }, [user?.email]);
+
+  const attendanceGroupBy = async () => {
+    try {
+      const res = await api.get('/attendance/mine');
+      if (res.data?.data) {
+        setAttendanceGroup(res.data.data);
+      }
+    } catch (e: any) {
+      console.error('Fetch attendance logs failed', e);
+    }
+  };
+
+  const checkIn = async (refreshUser: () => Promise<void>) => {
+    setIsActionLoading(true);
     try {
       const { status: fg } = await Location.requestForegroundPermissionsAsync();
       const { status: bg } = await Location.requestBackgroundPermissionsAsync();
@@ -55,16 +80,14 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({
 
       const loc = await Location.getCurrentPositionAsync({});
       const res = await api.post('/attendance/check-in', {
-        method: 'POST',
-        body: JSON.stringify({
-          lat: loc.coords.latitude,
-          lng: loc.coords.longitude,
-        }),
+        lat: loc.coords.latitude,
+        lng: loc.coords.longitude,
       });
 
-      if (res.data) {
-        setAttendanceId(res.data.attendanceId);
-        setIsCheckedIn(true);
+      if (res.data?.success) {
+        // Update working status optimistically
+        setUser((prev: any) => ({ ...prev, working: true }));
+
         await Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
           accuracy: Location.Accuracy.Balanced,
           timeInterval: 120000,
@@ -74,47 +97,44 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({
             notificationBody: 'Location tracking active',
           },
         });
+
+        attendanceGroupBy();
       }
     } catch (e: any) {
-      Alert.alert('Error', e.message);
-    }
-  };
-  const attendanceGroupBy = async () => {
-    try {
-      const res = await api.get('/attendance/mine');
-      if (res.data?.data) {
-        setAttendanceGroup(res.data?.data);
-      }
-    } catch (e: any) {
-      Alert.alert('Error', e.message);
+      Alert.alert('Check-in Failed', e.message);
+    } finally {
+      setIsActionLoading(false);
     }
   };
 
-  const checkOut = async () => {
+  const checkOut = async (refreshUser: () => Promise<void>) => {
+    setIsActionLoading(true);
     try {
       const res = await api.post('/attendance/check-out');
       if (res.data) {
-        await Location.stopLocationUpdatesAsync(LOCATION_TASK_NAME);
-        setIsCheckedIn(false);
-        setAttendanceId(null);
+        setUser((prev: any) => ({ ...prev, working: false }));
+
+        try {
+          await Location.stopLocationUpdatesAsync(LOCATION_TASK_NAME);
+        } catch (_) {}
+
+        attendanceGroupBy();
       }
     } catch (e: any) {
-      Alert.alert('Error', e.message);
+      Alert.alert('Check-out Failed', e.message);
+    } finally {
+      setIsActionLoading(false);
     }
   };
-
-  useEffect(() => {
-    attendanceGroupBy();
-  }, [isCheckedIn]);
 
   return (
     <AttendanceContext.Provider
       value={{
         isCheckedIn,
-        attendanceId,
         checkIn,
         checkOut,
         attendanceGroup,
+        isActionLoading,
       }}
     >
       {children}

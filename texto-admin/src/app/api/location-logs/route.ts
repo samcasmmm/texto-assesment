@@ -7,7 +7,7 @@ import { format } from 'date-fns';
 
 export async function GET(req: Request) {
   await dbConnect();
-  const user = await getCurrentUser();
+  const user = await getCurrentUser(req);
 
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -18,7 +18,7 @@ export async function GET(req: Request) {
   const date = searchParams.get('date'); // yyyy-mm-dd
 
   const query: any = {};
-  
+
   if (isAdmin(user)) {
     if (userId && mongoose.Types.ObjectId.isValid(userId)) {
       query.userId = new mongoose.Types.ObjectId(userId);
@@ -27,17 +27,19 @@ export async function GET(req: Request) {
     // Regular user only sees their own
     query.userId = new mongoose.Types.ObjectId(user.userId);
   }
-  
+
   if (date) query.date = date;
 
-  const logs = await LocationLog.find(query).populate('userId', 'name role').lean();
+  const logs = await LocationLog.find(query)
+    .populate('userId', 'name role')
+    .lean();
 
   return NextResponse.json(logs);
 }
 
 export async function POST(req: Request) {
   await dbConnect();
-  const user = await getCurrentUser();
+  const user = await getCurrentUser(req);
 
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -68,9 +70,15 @@ export async function POST(req: Request) {
       });
     }
 
-    return NextResponse.json({ success: true, logId: log._id }, { status: 201 });
+    return NextResponse.json(
+      { success: true, logId: log._id },
+      { status: 201 },
+    );
   } catch (error) {
     console.error('POST Location Log Error:', error);
-    return NextResponse.json({ error: 'Failed to log location' }, { status: 400 });
+    return NextResponse.json(
+      { error: 'Failed to log location' },
+      { status: 400 },
+    );
   }
 }

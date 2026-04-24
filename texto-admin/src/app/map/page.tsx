@@ -56,7 +56,6 @@ export default function MapViewPage() {
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
-    libraries: ['places'],
   });
 
   const [employees, setEmployees] = useState<any[]>([]);
@@ -67,43 +66,42 @@ export default function MapViewPage() {
   const mapRef = useRef<google.maps.Map | null>(null);
 
   useEffect(() => {
-    async function fetchLogs() {
+    async function fetchData() {
       try {
         setLoading(true);
 
         const formattedDate = format(date, 'yyyy-MM-dd');
 
         const res = await fetch(`/api/location-logs?date=${formattedDate}`);
-        const logs = await res.json();
+        const json = await res.json();
 
-        // 🔥 group by user (latest location)
-        const grouped: any = {};
+        const logs = json.data || [];
 
-        logs.forEach((log: any) => {
-          const user = log.userId;
+        const merged = logs
+          .map((log: any) => {
+            const user = log.userId;
+            const lastPoint = log.locations?.[log.locations.length - 1];
 
-          if (!grouped[user._id]) {
-            grouped[user._id] = {
+            if (!user || !lastPoint) return null;
+
+            return {
               _id: user._id,
               name: user.name,
               role: user.role,
-              location: null,
-              logs: [],
+
+              location: {
+                lat: lastPoint.coordinates.coordinates[1],
+                lng: lastPoint.coordinates.coordinates[0],
+              },
+
+              logs: log.locations,
             };
-          }
+          })
+          .filter(Boolean);
 
-          // 👇 take LAST location of day
-          const lastPoint = log.locations[log.locations.length - 1];
+        console.log('FINAL USERS WITH LOCATION:', merged);
 
-          grouped[user._id].location = {
-            lat: lastPoint.coordinates.coordinates[1],
-            lng: lastPoint.coordinates.coordinates[0],
-          };
-
-          grouped[user._id].logs = log.locations;
-        });
-
-        setEmployees(Object.values(grouped));
+        setEmployees(merged);
       } catch (err) {
         console.error('Map Fetch Error:', err);
       } finally {
@@ -111,7 +109,7 @@ export default function MapViewPage() {
       }
     }
 
-    fetchLogs();
+    fetchData();
   }, [date]);
 
   const fetchRoute = useCallback(async (empId: string, selectedDate: Date) => {
@@ -203,9 +201,9 @@ export default function MapViewPage() {
                   key={emp._id}
                   onClick={() => handleSelectEmployee(emp)}
                   className={cn(
-                    'w-full text-left p-4 rounded-lg transition-all border group',
+                    'w-full text-left p-4 rounded-sm transition-all border group',
                     selectedEmployee?._id === emp._id
-                      ? 'bg-white border-primary/20 shadow-md ring-1 ring-primary/5'
+                      ? 'bg-white border-primary/20 ing-1 ring-primary/5'
                       : 'border-transparent hover:bg-white hover:shadow-sm',
                   )}
                 >
@@ -244,6 +242,14 @@ export default function MapViewPage() {
                 key={emp._id}
                 position={emp.location}
                 onClick={() => handleSelectEmployee(emp)}
+                icon={{
+                  path: window.google.maps.SymbolPath.CIRCLE,
+                  scale: 6,
+                  fillColor: '#27272a', // zinc-800
+                  fillOpacity: 1,
+                  strokeColor: '#27272a',
+                  strokeWeight: 1,
+                }}
               />
             ))}
             {selectedEmployee && route.length > 0 && (

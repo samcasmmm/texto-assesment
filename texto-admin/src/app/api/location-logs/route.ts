@@ -61,11 +61,16 @@ export async function POST(req: Request) {
       );
     }
 
+    if (!mongoose.Types.ObjectId.isValid(user.userId)) {
+      return NextResponse.json({ error: 'Invalid userId' }, { status: 400 });
+    }
+
     const now = timestamp ? new Date(timestamp) : new Date();
     const date = format(now, 'yyyy-MM-dd');
+    const userObjectId = new mongoose.Types.ObjectId(user.userId);
 
     const existing = await LocationLog.findOne({
-      userId: user.userId,
+      userId: userObjectId,
       date,
     });
 
@@ -77,7 +82,7 @@ export async function POST(req: Request) {
     }
 
     const log = await LocationLog.create({
-      userId: user.userId,
+      userId: userObjectId,
       attendanceId: attendanceId || new mongoose.Types.ObjectId(),
       date,
       locations: [
@@ -120,11 +125,16 @@ export async function PATCH(req: Request) {
       );
     }
 
+    if (!mongoose.Types.ObjectId.isValid(user.userId)) {
+      return NextResponse.json({ error: 'Invalid userId' }, { status: 400 });
+    }
+
     const now = timestamp ? new Date(timestamp) : new Date();
     const date = format(now, 'yyyy-MM-dd');
+    const userObjectId = new mongoose.Types.ObjectId(user.userId);
 
     const log = await LocationLog.findOne({
-      userId: user.userId,
+      userId: userObjectId,
       date,
     });
 

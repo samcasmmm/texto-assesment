@@ -27,21 +27,32 @@ let todayLogCreated = false;
 let trackedDate = '';
 
 TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }: any) => {
-  if (error) return;
+  if (error) {
+    console.error('[Bkg Task] Task Error:', error);
+    return;
+  }
   if (!data) return;
+
+  const { locations } = data;
+  const location = locations?.[0];
+  console.log(
+    '[Bkg Task] Fired at:',
+    new Date().toLocaleTimeString(),
+    'Points:',
+    locations?.length,
+  );
+
+  if (!location) return;
 
   // Stop syncing if user has punched out
   const isWorking = storageService.get(WORKING_KEY);
   if (isWorking && isWorking !== 'true') {
+    console.log('[Bkg Task] User not working, stopping task...');
     try {
       await Location.stopLocationUpdatesAsync(LOCATION_TASK_NAME);
     } catch (_) {}
     return;
   }
-
-  const { locations } = data;
-  const location = locations?.[0];
-  if (!location) return;
 
   const coordinates = [location.coords.longitude, location.coords.latitude];
   const timestamp = new Date(location.timestamp);
@@ -55,23 +66,31 @@ TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }: any) => {
 
   try {
     if (!todayLogCreated) {
+      console.log('[Bkg Task] Attempting POST for new day log...');
       const res = await api.post('/location-logs', { coordinates, timestamp });
       if (res.data?.success) {
         todayLogCreated = true;
+        console.log('[Bkg Task] POST Success');
       }
     } else {
-      await api.patch('/location-logs', { coordinates, timestamp });
+      console.log('[Bkg Task] Attempting PATCH...');
+      const res = await api.patch('/location-logs', { coordinates, timestamp });
+      console.log(
+        '[Bkg Task] PATCH Result:',
+        res.data?.updated ? 'Point Added' : 'Throttled',
+      );
     }
   } catch (e: any) {
     if (e.message?.includes('already exists') || e.message?.includes('400')) {
+      console.log('[Bkg Task] Log exists, switching to PATCH mode');
       todayLogCreated = true;
       try {
         await api.patch('/location-logs', { coordinates, timestamp });
       } catch (patchErr) {
-        console.error('Bkg Location PATCH Fail', patchErr);
+        console.error('[Bkg Task] Emergency PATCH Fail', patchErr);
       }
     } else {
-      console.error('Bkg Location Sync Fail', e);
+      console.error('[Bkg Task] Sync Fail', e.message);
     }
   }
 });
@@ -147,7 +166,7 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({
 
       const loc = await Location.getCurrentPositionAsync({});
       console.log('[Check-in] Current position:', loc.coords);
-      
+
       const res = await api.post('/attendance/check-in', {
         lat: loc.coords.latitude,
         lng: loc.coords.longitude,
@@ -161,7 +180,7 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({
 
         try {
           await Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
-            accuracy: Location.Accuracy.Balanced,
+            accuracy: Location.Accuracy.High,
             timeInterval: 3 * 60 * 1000,
             distanceInterval: 0,
             pausesUpdatesAutomatically: false,
@@ -194,7 +213,7 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({
       console.log('[Check-out] Starting...');
       const res = await api.post('/attendance/check-out');
       console.log('[Check-out] API Response:', res.data);
-      
+
       if (res.data) {
         storageService.set(WORKING_KEY, 'false');
         setUser((prev: any) => ({ ...prev, working: false }));

@@ -96,11 +96,7 @@ export default function HomeScreen() {
 
         <View style={styles.mainActionCard}>
           <TouchableOpacity
-            onPress={
-              isCheckedIn
-                ? () => checkOut(refreshUser)
-                : () => checkIn(refreshUser)
-            }
+            onPress={isCheckedIn ? checkOut : checkIn}
             activeOpacity={0.9}
             disabled={isActionLoading}
             style={[

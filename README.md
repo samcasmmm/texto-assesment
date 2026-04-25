@@ -91,4 +91,7 @@ npx expo start
 ## 📄 License
 
 This project is licensed under the MIT License.
-![alt text](image.png)
+
+## 📸 Screenshots
+
+![Login Screen](docs/screenshot/image.png)

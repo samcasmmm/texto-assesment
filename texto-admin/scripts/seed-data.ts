@@ -150,7 +150,7 @@ async function seed() {
         name: 'My Home Office',
         latitude: 19.269125,
         longitude: 73.172335,
-        radius: 250,
+        radius: 350,
       },
     ]);
 

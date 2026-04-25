@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   GoogleMap,
   useJsApiLoader,
+  Circle,
   Marker,
   Polyline,
   InfoWindow,
@@ -59,6 +60,7 @@ export default function MapViewPage() {
   });
 
   const [employees, setEmployees] = useState<any[]>([]);
+  const [geofences, setGeofences] = useState<any[]>([]);
   const [selectedEmployee, setSelectedEmployee] = useState<any>(null);
   const [date, setDate] = useState<Date>(new Date());
   const [route, setRoute] = useState<any[]>([]);
@@ -112,21 +114,29 @@ export default function MapViewPage() {
     fetchData();
   }, [date]);
 
-  const fetchRoute = useCallback(async (empId: string, selectedDate: Date) => {
-    try {
-      const formattedDate = format(selectedDate, 'yyyy-MM-dd');
-      const res = await fetch(
-        `/api/location-logs?userId=${empId}&date=${formattedDate}`,
-      );
-      const logs = await res.json();
-      const path = logs.map((log: any) => ({
-        lat: log.coordinates.coordinates[1],
-        lng: log.coordinates.coordinates[0],
-      }));
-      setRoute(path);
-    } catch (e) {
-      setRoute([]);
+  useEffect(() => {
+    async function fetchGeofences() {
+      try {
+        const res = await fetch('/api/geofences');
+        const data = await res.json();
+        setGeofences(data);
+      } catch (err) {
+        console.error('Geofence Fetch Error:', err);
+      }
     }
+    fetchGeofences();
+  }, []);
+
+  const fetchRoute = useCallback(async (emp: any) => {
+    if (!emp.logs) {
+      setRoute([]);
+      return;
+    }
+    const path = emp.logs.map((loc: any) => ({
+      lat: loc.coordinates.coordinates[1],
+      lng: loc.coordinates.coordinates[0],
+    }));
+    setRoute(path);
   }, []);
 
   const handleSelectEmployee = (emp: any) => {
@@ -135,7 +145,7 @@ export default function MapViewPage() {
       mapRef.current.panTo(emp.location);
       mapRef.current.setZoom(18);
     }
-    fetchRoute(emp._id, date);
+    fetchRoute(emp);
   };
 
   if (!isLoaded || loading) {
@@ -237,25 +247,60 @@ export default function MapViewPage() {
             }}
             options={mapOptions}
           >
+            {geofences.map((gf) => (
+              <Circle
+                key={gf._id}
+                center={{ lat: gf.latitude, lng: gf.longitude }}
+                radius={gf.radius}
+                options={{
+                  fillColor: '#10b981',
+                  fillOpacity: 0.1,
+                  strokeColor: '#10b981',
+                  strokeOpacity: 0.8,
+                  strokeWeight: 2,
+                }}
+              />
+            ))}
             {employees.map((emp) => (
               <Marker
                 key={emp._id}
                 position={emp.location}
                 onClick={() => handleSelectEmployee(emp)}
-                icon={{
-                  path: window.google.maps.SymbolPath.CIRCLE,
-                  scale: 6,
-                  fillColor: '#27272a', // zinc-800
-                  fillOpacity: 1,
-                  strokeColor: '#27272a',
-                  strokeWeight: 1,
-                }}
+                icon={
+                  isLoaded
+                    ? {
+                        path: google.maps.SymbolPath.CIRCLE,
+                        scale: 8,
+                        fillColor: '#3b82f6',
+                        fillOpacity: 1,
+                        strokeColor: '#ffffff',
+                        strokeWeight: 2,
+                      }
+                    : undefined
+                }
               />
             ))}
+            {selectedEmployee && (
+              <InfoWindow
+                position={selectedEmployee.location}
+                onCloseClick={() => setSelectedEmployee(null)}
+              >
+                <div className='p-2'>
+                  <p className='font-bold text-sm'>{selectedEmployee.name}</p>
+                  <p className='text-xs text-muted-foreground'>
+                    {selectedEmployee.role}
+                  </p>
+                </div>
+              </InfoWindow>
+            )}
             {selectedEmployee && route.length > 0 && (
               <Polyline
                 path={route}
-                options={{ strokeColor: '#3b82f6', strokeWeight: 4 }}
+                options={{
+                  strokeColor: '#3b82f6',
+                  strokeWeight: 4,
+                  strokeOpacity: 0.8,
+                }}
               />
             )}
           </GoogleMap>

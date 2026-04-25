@@ -50,8 +50,8 @@ export default function DashboardPage() {
         fetch(`/api/attendance?date=${today}`).then((res) => res.json()),
       ]);
 
-      setStats(statsRes.summary);
-      setAttendance(attendanceRes);
+      setStats(statsRes.summary || null);
+      setAttendance(Array.isArray(attendanceRes) ? attendanceRes : []);
     } catch (error) {
       console.error('Dashboard Fetch Error:', error);
     } finally {
@@ -64,10 +64,10 @@ export default function DashboardPage() {
   }, []);
 
   const filteredAttendance = useMemo(() => {
-    return attendance?.filter(
+    return (attendance || []).filter(
       (record) =>
-        record.userId?.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        record.userId?.email.toLowerCase().includes(searchQuery.toLowerCase()),
+        record.userId?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        record.userId?.email?.toLowerCase().includes(searchQuery.toLowerCase()),
     );
   }, [attendance, searchQuery]);
 

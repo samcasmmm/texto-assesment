@@ -54,7 +54,7 @@ export default function EmployeesPage() {
       try {
         const res = await fetch('/api/employees');
         const data = await res.json();
-        setEmployees(data);
+        setEmployees(Array.isArray(data) ? data : []);
       } catch (error) {
         console.error('Error fetching employees:', error);
       } finally {

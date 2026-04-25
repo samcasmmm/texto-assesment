@@ -67,7 +67,7 @@ export default function AttendancePage() {
 
         const res = await fetch(url);
         const data = await res.json();
-        setAttendance(data);
+        setAttendance(Array.isArray(data) ? data : []);
       } catch (error) {
         console.error('Error fetching attendance:', error);
       } finally {

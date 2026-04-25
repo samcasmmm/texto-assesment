@@ -3,6 +3,7 @@ import dbConnect from '@/lib/db';
 import LocationLog from '@/models/LocationLog';
 import mongoose from 'mongoose';
 import { getCurrentUser, isAdmin } from '@/lib/auth';
+import Attendance from '@/models/Attendance';
 import { format } from 'date-fns';
 
 const shouldAddPoint = (last: Date, now: Date) => {
@@ -69,6 +70,15 @@ export async function POST(req: Request) {
     const date = format(now, 'yyyy-MM-dd');
     const userObjectId = new mongoose.Types.ObjectId(user.userId);
 
+    // Find the current attendance record for this day
+    const attendance = await Attendance.findOne({
+      userId: userObjectId,
+      date,
+    });
+
+    const attId =
+      attendance?._id || attendanceId || new mongoose.Types.ObjectId();
+
     const existing = await LocationLog.findOne({
       userId: userObjectId,
       date,
@@ -83,7 +93,7 @@ export async function POST(req: Request) {
 
     const log = await LocationLog.create({
       userId: userObjectId,
-      attendanceId: attendanceId || new mongoose.Types.ObjectId(),
+      attendanceId: attId,
       date,
       locations: [
         {
@@ -99,7 +109,6 @@ export async function POST(req: Request) {
     );
   } catch (error) {
     console.error('POST error:', error);
-
     return NextResponse.json(
       { error: 'Failed to create log' },
       { status: 400 },
@@ -133,16 +142,35 @@ export async function PATCH(req: Request) {
     const date = format(now, 'yyyy-MM-dd');
     const userObjectId = new mongoose.Types.ObjectId(user.userId);
 
-    const log = await LocationLog.findOne({
+    let log = await LocationLog.findOne({
       userId: userObjectId,
       date,
     });
 
     if (!log) {
-      return NextResponse.json(
-        { error: 'No log found. Use POST first.' },
-        { status: 404 },
-      );
+      // Auto-create log if it doesn't exist (Upsert logic)
+      const attendance = await Attendance.findOne({
+        userId: userObjectId,
+        date,
+      });
+
+      log = await LocationLog.create({
+        userId: userObjectId,
+        attendanceId: attendance?._id || new mongoose.Types.ObjectId(),
+        date,
+        locations: [
+          {
+            coordinates: { type: 'Point', coordinates },
+            timestamp: now,
+          },
+        ],
+      });
+
+      return NextResponse.json({
+        success: true,
+        updated: true,
+        note: 'Log created on PATCH',
+      });
     }
 
     const lastLocation = log.locations[log.locations.length - 1];
@@ -165,7 +193,6 @@ export async function PATCH(req: Request) {
     });
   } catch (error) {
     console.error('PATCH error:', error);
-
     return NextResponse.json(
       { error: 'Failed to update location' },
       { status: 400 },

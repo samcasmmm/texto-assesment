@@ -185,7 +185,7 @@ export default function ReportsPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {!data || data.records?.length === 0 ? (
+                      {!data || !Array.isArray(data.records) || data.records.length === 0 ? (
                         <TableRow>
                           <TableCell colSpan={5} className='text-center py-20'>
                             <div className='flex flex-col items-center text-muted-foreground gap-2'>

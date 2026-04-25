@@ -103,7 +103,7 @@ export default function MapViewPage() {
 
         console.log('FINAL USERS WITH LOCATION:', merged);
 
-        setEmployees(merged);
+        setEmployees(Array.isArray(merged) ? merged : []);
       } catch (err) {
         console.error('Map Fetch Error:', err);
       } finally {
@@ -119,7 +119,7 @@ export default function MapViewPage() {
       try {
         const res = await fetch('/api/geofences');
         const data = await res.json();
-        setGeofences(data);
+        setGeofences(Array.isArray(data) ? data : []);
       } catch (err) {
         console.error('Geofence Fetch Error:', err);
       }

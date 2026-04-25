@@ -23,8 +23,7 @@ const AttendanceContext = createContext<AttendanceContextType | undefined>(
   undefined,
 );
 
-let todayLogCreated = false;
-let trackedDate = '';
+const LOG_DATE_KEY = 'last_log_date';
 
 TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }: any) => {
   if (error) {
@@ -57,23 +56,20 @@ TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }: any) => {
   const coordinates = [location.coords.longitude, location.coords.latitude];
   const timestamp = new Date(location.timestamp);
   const currentDate = timestamp.toISOString().split('T')[0];
+  const lastLogDate = storageService.get(LOG_DATE_KEY);
 
-  // Reset flag on new day
-  if (currentDate !== trackedDate) {
-    todayLogCreated = false;
-    trackedDate = currentDate;
-  }
+  const needsPost = currentDate !== lastLogDate;
 
   try {
-    if (!todayLogCreated) {
-      console.log('[Bkg Task] Attempting POST for new day log...');
+    if (needsPost) {
+      console.log('[Bkg Task] New day or first log. Attempting POST...');
       const res = await api.post('/location-logs', { coordinates, timestamp });
       if (res.data?.success) {
-        todayLogCreated = true;
+        storageService.set(LOG_DATE_KEY, currentDate);
         console.log('[Bkg Task] POST Success');
       }
     } else {
-      console.log('[Bkg Task] Attempting PATCH...');
+      console.log('[Bkg Task] Log exists for today. Attempting PATCH...');
       const res = await api.patch('/location-logs', { coordinates, timestamp });
       console.log(
         '[Bkg Task] PATCH Result:',
@@ -81,16 +77,34 @@ TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }: any) => {
       );
     }
   } catch (e: any) {
-    if (e.message?.includes('already exists') || e.message?.includes('400')) {
-      console.log('[Bkg Task] Log exists, switching to PATCH mode');
-      todayLogCreated = true;
+    const errorMsg = e.response?.data?.error || e.message || '';
+    console.log('[Bkg Task] Sync Error Response:', errorMsg);
+
+    if (errorMsg.includes('already exists') || e.response?.status === 400) {
+      console.log('[Bkg Task] Log already exists on server, updating state');
+      storageService.set(LOG_DATE_KEY, currentDate);
+      // Optional: try PATCH immediately
       try {
         await api.patch('/location-logs', { coordinates, timestamp });
-      } catch (patchErr) {
-        console.error('[Bkg Task] Emergency PATCH Fail', patchErr);
-      }
+      } catch (_) {}
+    } else if (
+      errorMsg.includes('No log found') ||
+      e.response?.status === 404
+    ) {
+      console.log(
+        '[Bkg Task] Log not found on server, attempting POST recovery',
+      );
+      try {
+        const res = await api.post('/location-logs', {
+          coordinates,
+          timestamp,
+        });
+        if (res.data?.success) {
+          storageService.set(LOG_DATE_KEY, currentDate);
+        }
+      } catch (_) {}
     } else {
-      console.error('[Bkg Task] Sync Fail', e.message);
+      console.error('[Bkg Task] Sync Fail:', errorMsg);
     }
   }
 });

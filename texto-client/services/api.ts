@@ -6,7 +6,7 @@ import axios, {
 import { storageService } from './storage';
 
 const api = axios.create({
-  baseURL: 'http://192.168.0.126:3000/api',
+  baseURL: 'https://texto-assesment.vercel.app/api',
   headers: {
     'Content-Type': 'application/json',
   },

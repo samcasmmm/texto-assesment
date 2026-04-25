@@ -1,39 +1,34 @@
-# TextoHRMS - Enterprise Workforce Management Dashboard
+# TextoHRMS Admin - Workforce Intelligence Dashboard
 
-TextoHRMS is a production-ready, full-stack admin dashboard designed for modern organizations to track employee attendance, monitor field workforce movements in real-time, and generate insightful performance reports.
-
-![TextoHRMS Dashboard Mockup](public/dashboard-preview.png)
+TextoHRMS Admin is a high-performance, full-stack dashboard built with Next.js 15, designed for modern organizations to monitor field workforce movements, manage attendance geofencing, and analyze performance metrics.
 
 ## 🚀 Features
 
-- **Control Tower Dashboard**: Real-time workforce overview with live status indicators and key performance metrics.
-- **Geospatial Intelligence**: Live employee tracking using Google Maps API, featuring route history polyline visualization.
-- **Attendance Management**: Automated check-in/out logging with tardiness tracking and status filtering.
-- **Workforce Directory**: Centralized employee management with role-based grouping and quick actions.
-- **Performance Analytics**: Tabbed historical reporting with attendance rates and daily summaries.
-- **Geo-Fencing**: Admin interface for creating virtual boundaries and monitoring entry/exit events.
-- **Premium UI/UX**: Built with a sleek "Glassmorphism" aesthetic using Tailwind CSS 4 and shadcn/ui.
+- **Control Tower**: Real-time visualization of active staff on a live map with status indicators.
+- **Geospatial Intelligence**: Historical route tracking using polylines and Google Maps API.
+- **Geofence Management**: Admin tools to define and manage workplace boundaries.
+- **Comprehensive Reports**: Automated analytics for attendance rates, tardiness, and daily summaries.
+- **Glassmorphism UI**: A premium, modern design aesthetic built with Tailwind CSS 4 and shadcn/ui.
+- **Scalable API**: Robust backend handling high-frequency location synchronization from mobile clients.
 
 ## 🛠️ Tech Stack
 
 - **Framework**: [Next.js 15 (App Router)](https://nextjs.org/)
-- **Language**: [TypeScript](https://www.typescriptlang.org/)
 - **Styling**: [Tailwind CSS 4](https://tailwindcss.com/)
 - **Components**: [shadcn/ui](https://ui.shadcn.com/)
 - **Database**: [MongoDB](https://www.mongodb.com/) with [Mongoose](https://mongoosejs.com/)
 - **Maps**: [Google Maps Platform](https://developers.google.com/maps)
-- **Icons**: [Lucide React](https://lucide.dev/)
-- **Dates**: [date-fns](https://date-fns.org/)
+- **Auth**: JWT-based secure authentication
 
 ## ⚙️ Setup Instructions
 
 ### 1. Prerequisites
 - Node.js (v18+)
-- MongoDB instance (Local or Atlas)
+- MongoDB instance
 - Google Maps API Key
 
 ### 2. Environment Configuration
-Create a `.env` file in the root directory and add the following:
+Create a `.env` file in the root of `texto-admin/`:
 ```env
 MONGODB_URI=your_mongodb_connection_string
 NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your_google_maps_api_key
@@ -42,31 +37,28 @@ JWT_SECRET=your_jwt_secret_key
 
 ### 3. Installation
 ```bash
-bun install
-# or
 npm install
 ```
 
-### 4. Run Development Server
+### 4. Development Server
 ```bash
-bun dev
-# or
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to view the dashboard.
+### 5. Seeding Data (Optional)
+To populate the database with demo employees, attendance, and geofences:
+```bash
+bun run scripts/seed-data.ts
+```
 
-## 📁 Project Structure
-
+## 📂 Directory Structure
 ```text
-src/
-├── app/            # Next.js App Router (Pages & API)
-├── components/     # Shared UI & Business Components
-│   ├── ui/         # Base Radix-based components
-│   └── skeleton/   # Loading states
-├── lib/            # Utilities (DB connection, config)
-├── models/         # Mongoose Schemas
-└── types.d.ts      # Global Type Definitions
+texto-admin/
+├── src/app/          # Next.js Pages & API Routes
+├── src/components/   # Dashboard UI System
+├── src/models/       # Mongoose Schemas (Attendance, Employee, GeoFence, LocationLog)
+├── src/lib/          # Database & Auth Utilities
+└── scripts/          # Database seeding scripts
 ```
 
 ## 📄 License

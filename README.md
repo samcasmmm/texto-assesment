@@ -92,6 +92,36 @@ npx expo start
 
 This project is licensed under the MIT License.
 
+## 📸 APK Link
+
+[APK Link](https://drive.google.com/file/d/1WEKPloxpmT0SDZcUfOwfNyHZwBPiCg3b/view?usp=sharing)
+
 ## 📸 Screenshots
 
-![Login Screen](docs/screenshot/image.png)
+### Web + Admin
+
+![Landing](docs/screenshot/landing.png)
+
+![Login](docs/screenshot/login.png)
+
+![Dashboard](docs/screenshot/dashboard.png)
+
+![Employees](docs/screenshot/employees.png)
+
+![Attendance](docs/screenshot/attendance.png)
+
+![Map](docs/screenshot/maps.png)
+
+![Report](docs/screenshot/report.png)
+
+![GeoFence](docs/screenshot/geofence.png)
+
+### Mobile
+
+![Mobile-splash](docs/screenshot/mobile-splash.png)
+
+![Mobile-login](docs/screenshot/mobile-login.png)
+
+![Mobile-attendance-check-in](docs/screenshot/mobile-attendance-check-in.png)
+
+![Mobile-attendance-check-out](docs/screenshot/mobile-attendance-check-out.png)
